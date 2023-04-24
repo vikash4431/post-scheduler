@@ -1,0 +1,166 @@
+function generatePost() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const selectedCells = sheet.getActiveRange().getValues();
+  const temperature = 1;
+  const model = "text-davinci-003";
+  const secretKey = "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";
+  const MAX_TOKENS = 2000;
+  const url = "https://api.openai.com/v1/completions";
+
+  selectedCells.forEach((row, rowIndex) => {
+    const prompt = row[0];
+    if (prompt === "") {
+      return;
+    }
+
+    const payload = {
+      model: model,
+      prompt: prompt,
+      temperature: temperature,
+      max_tokens: MAX_TOKENS,
+    };
+    const options = {
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + secretKey },
+      payload: JSON.stringify(payload),
+    };
+    const res = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
+    sheet.getRange(rowIndex + sheet.getActiveRange().getRow(), sheet.getActiveRange().getColumn() + 1).setValue(res.choices[0].text.trim());
+  });
+}
+
+function postOnLinkedIn() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var accessToken = sheet.getRange('B7').getValue();
+  var apiUrl = 'https://api.linkedin.com/v2/ugcPosts';
+  var currentDate = new Date().toLocaleDateString();
+  Logger.log(currentDate);
+
+  // loop through cells in column C to find a match with current date
+  for (var i = 15; i <= 64; i++) {
+    var postDate = sheet.getRange('C' + i).getValue().toLocaleDateString();
+    if (postDate === currentDate) {
+      var content = {
+        "author": "urn:li:person:" + sheet.getRange('B12').getValue(),
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+          "com.linkedin.ugc.ShareContent": {
+            "shareCommentary": {
+              "text": sheet.getRange('B' + i).getValue()
+            },
+            "shareMediaCategory": "NONE"
+          }
+        },
+        "visibility": {
+          "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+        }
+      };
+      var options = {
+        'method': 'post',
+        'contentType': 'application/json',
+        'payload': JSON.stringify(content),
+        'headers': {
+          'Authorization': 'Bearer ' + accessToken,
+          'cache-control': 'no-cache',
+          'X-Restli-Protocol-Version': '2.0.0'
+        }
+      };
+      var response = UrlFetchApp.fetch(apiUrl, options);
+
+      // Log the response to the console
+      Logger.log(response.getContentText());
+
+      break; // exit loop after finding a match
+    }
+  }
+}
+
+
+function getAuthorizationUrl() {
+  var clientId = '86y61k6fm45j27'; // Replace with your Client ID
+  // Get the deployed web app URL from the script properties
+  var appUrl = PropertiesService.getScriptProperties().getProperty('APP_URL'); //APP_URL is the web app url you get on deploying this app and you need to update the same in project settings
+  var redirectUri = appUrl + '?prefix=doGet'; //we call doGet function to record the authCode
+  var state = 'kjhvkjhvkhvk'; // Replace with a random string
+  var scope = 'r_liteprofile r_emailaddress w_member_social';
+
+  var authorizationUrl = 'https://www.linkedin.com/oauth/v2/authorization?' +
+    'response_type=code&' +
+    'client_id=' + encodeURIComponent(clientId) + '&' +
+    'redirect_uri=' + encodeURIComponent(redirectUri) + '&' +
+    'state=' + encodeURIComponent(state) + '&' +
+    'scope=' + encodeURIComponent(scope);
+    
+  var sheet = SpreadsheetApp.getActiveSheet();
+  sheet.getRange('B3').setValue(authorizationUrl); //saves authorizationUrl in sheet from where user needs to authorise the web app
+  
+  var html = '<script>window.open("' + authorizationUrl + '", "_blank"); google.script.host.close();</script>';
+  var userInterface = HtmlService.createHtmlOutput(html);
+  SpreadsheetApp.getUi().showModalDialog(userInterface, 'Authorize Web App');
+}
+
+function doGet(e) {
+  var authCode = e.parameter.code;
+  var state = e.parameter.state;
+  
+  var sheet = SpreadsheetApp.getActiveSheet();
+  sheet.getRange('B4').setValue(authCode);
+  sheet.getRange('B5').setValue(state);
+  sheet.getRange('B6').setValue(JSON.stringify(e));
+
+  return ContentService.createTextOutput('Setup Successful! You can close this page and click on the Finish Setup button');
+}
+
+function getAccessToken() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var authorizationCode = sheet.getRange('B4').getValue();
+  var clientId = '86y61k6fm45j27'; // Replace with your Client ID
+  var clientSecret = 'tXPuV8qxtaFw7IYP'; // Replace with your Client Secret
+  var appUrl = PropertiesService.getScriptProperties().getProperty('APP_URL');
+  var redirectUri = appUrl + '?prefix=doGet'; //we call doGet function to record the authCode
+  var tokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken' +
+    '?code=' + authorizationCode +
+    '&grant_type=authorization_code' +
+    '&client_id=' + clientId +
+    '&client_secret=' + clientSecret +
+    '&redirect_uri=' + redirectUri;
+
+  var response = UrlFetchApp.fetch(tokenUrl, { 'muteHttpExceptions': false });
+  var tokenData = JSON.parse(response.getContentText());
+  var accessToken = tokenData.access_token;
+  var expiresIn = tokenData.expires_in;
+  var refreshToken = tokenData.refresh_token;
+  var tokenType = tokenData.token_type;
+  var scope = tokenData.scope;
+
+  sheet.getRange('B7').setValue(accessToken);
+  sheet.getRange('B8').setValue(tokenType);
+  sheet.getRange('B9').setValue(scope);
+  sheet.getRange('B10').setValue(expiresIn);
+  sheet.getRange('B11').setValue(refreshToken);
+
+  return accessToken;
+}
+
+function getPersonUrn() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var accessToken = getAccessToken();
+  var apiUrl = 'https://api.linkedin.com/v2/me';
+  var options = {
+    'method': 'get',
+    'headers': {
+      'Authorization': 'Bearer ' + accessToken,
+      'cache-control': 'no-cache',
+      'X-Restli-Protocol-Version': '2.0.0'
+    }
+  };
+  var response = UrlFetchApp.fetch(apiUrl, options);
+  var profileData = JSON.parse(response.getContentText());
+  
+  // Log profile data to console
+  Logger.log(profileData);
+  
+  // Record person URN in sheet
+  var personUrn = profileData.id;
+  sheet.getRange('B12').setValue(personUrn);
+}
