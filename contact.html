@@ -1,0 +1,116 @@
+<script>
+const form = document.querySelector('form');
+const inputFirstName = document.querySelector('#fname');
+const inputLastName = document.querySelector('#lname');
+const inputEmail = document.querySelector('#email');
+const inputPhone = document.querySelector('#phone');
+const inputUsername = document.querySelector('#username');
+const inputPassword = document.querySelector('#password');
+const inputConfirmPassword = document.querySelector('#confirmPassword');
+const inputAddress1 = document.querySelector('#address1');
+const inputCity = document.querySelector('#city');
+const inputState = document.querySelector('#state');
+const inputZip = document.querySelector('#zip');
+const inputCountry = document.querySelector('#country');
+
+// Regular Expressions for validation
+// Email Validation: RFC 5322 Standard
+const emailRegex = /^[^\s@]+@[a-zA-Z]{2,}\.[a-zA-Z]{2,}$/;
+// Phone Validation: North American Numbering Plan (NANP)
+const phoneRegex = /^\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
+// Password Validation: Minimum 8 characters, 1 uppercase letter, 1 lowercase letter, and 1 number.
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
+
+// Event Listeners
+form.addEventListener('submit', function(e) {
+  const isValid = validateForm();
+  if (!isValid) {
+    e.preventDefault();
+  }
+});
+
+inputEmail.addEventListener('input', function() {
+  if (inputEmail.value.trim() !== '') {
+    if (!emailRegex.test(inputEmail.value.trim())) {
+      inputEmail.setCustomValidity('Invalid email address');
+    } else {
+      inputEmail.setCustomValidity('');
+    }
+  }
+});
+
+inputPhone.addEventListener('input', function() {
+  if (inputPhone.value.trim() !== '') {
+    if (!phoneRegex.test(inputPhone.value.trim())) {
+      inputPhone.setCustomValidity('Invalid phone number format. Accepted format: (123) 456-7890');
+    } else {
+      inputPhone.setCustomValidity('');
+    }
+  }
+});
+
+inputPassword.addEventListener('input', function() {
+  if (inputPassword.value.trim() !== '') {
+    if (!passwordRegex.test(inputPassword.value.trim())) {
+      inputPassword.setCustomValidity('Password must be at least 8 characters, and must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number.');
+    } else {
+      inputPassword.setCustomValidity('');
+      inputConfirmPassword.setAttribute('pattern', inputPassword.value.trim());
+      inputConfirmPassword.setAttribute('title', 'Invalid password confirmation');
+    }
+  }
+});
+
+function validateForm() {
+  let isValid = true;
+  if (inputFirstName.value.trim() === '') {
+    isValid = false;
+    inputFirstName.setCustomValidity('Please fill out this field');
+  }
+  if (inputLastName.value.trim() === '') {
+    isValid = false;
+    inputLastName.setCustomValidity('Please fill out this field');
+  }
+  if (inputEmail.value.trim() === '') {
+    isValid = false;
+    inputEmail.setCustomValidity('Please fill out this field');
+  }
+  if (inputPhone.value.trim() === '') {
+    isValid = false;
+    inputPhone.setCustomValidity('Please fill out this field');
+  }
+  if (inputUsername.value.trim() === '') {
+    isValid = false;
+    inputUsername.setCustomValidity('Please fill out this field');
+  }
+  if (inputPassword.value.trim() === '') {
+    isValid = false;
+    inputPassword.setCustomValidity('Please fill out this field');
+  }
+  if (inputConfirmPassword.value.trim() === '') {
+    isValid = false;
+    inputConfirmPassword.setCustomValidity('Please fill out this field');
+  }
+  if (inputAddress1.value.trim() === '') {
+    isValid = false;
+    inputAddress1.setCustomValidity('Please fill out this field');
+  }
+  if (inputCity.value.trim() === '') {
+    isValid = false;
+    inputCity.setCustomValidity('Please fill out this field');
+  }
+  if (inputState.value.trim() === '') {
+    isValid = false;
+    inputState.setCustomValidity('Please fill out this field');
+  }
+  if (inputZip.value.trim() === '') {
+    isValid = false;
+    inputZip.setCustomValidity('Please fill out this field');
+  }
+  if (inputCountry.value.trim() === '') {
+    isValid = false;
+    inputCountry.setCustomValidity('Please fill out this field');
+  }
+  return isValid;
+}
+</script>
